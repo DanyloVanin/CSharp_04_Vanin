@@ -1,6 +1,4 @@
 ﻿using System.Windows;
-using CShar_Vanin_04.Tools.DataStorage;
-using CShar_Vanin_04.Tools.Managers;
 using CShar_Vanin_04.ViewModels;
 
 namespace CShar_Vanin_04
@@ -13,8 +11,7 @@ namespace CShar_Vanin_04
         public MainWindow()
         {
             InitializeComponent();
-            StationManager.Initialize(new SerializedDataStorage());
-            DataContext = new PersonGridViewModel();
+            DataContext = new MainWindowViewModel();
         }
     }
 }

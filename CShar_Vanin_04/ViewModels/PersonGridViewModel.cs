@@ -2,16 +2,17 @@
 using CShar_Vanin_04.Tools;
 using CShar_Vanin_04.Tools.Managers;
 using CShar_Vanin_04.Tools.MVVM;
-using CShar_Vanin_04.Views;
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
+using CShar_Vanin_04.Tools.Navigation;
 
 namespace CShar_Vanin_04.ViewModels
 {
-    class PersonGridViewModel : BaseViewModel, ILoaderOwner
+    class PersonGridViewModel : BaseViewModel
     {
         #region Fields
         private ObservableCollection<Person> _persons;
@@ -33,29 +34,9 @@ namespace CShar_Vanin_04.ViewModels
         private RelayCommand<object> _sortByIsBirthday;
         #endregion
 
-        private Visibility _loaderVisibility = Visibility.Hidden;
-        private bool _isControlEnabled = true;
         #endregion
 
         #region Properties
-        public Visibility LoaderVisibility
-        {
-            get => _loaderVisibility;
-            set
-            {
-                _loaderVisibility = value;
-                OnPropertyChanged();
-            }
-        }
-        public bool IsControlEnabled
-        {
-            get => _isControlEnabled;
-            set
-            {
-                _isControlEnabled = value;
-                OnPropertyChanged();
-            }
-        }
         public Person SelectedPerson
         {
             get => _selectedPerson;
@@ -110,7 +91,7 @@ namespace CShar_Vanin_04.ViewModels
             get
             {
                 return _sortByName ??= new RelayCommand<object>(
-                   o => SortControlMethod(o, 1));
+                   o => SortControlMethod(1));
             }
         }
         public RelayCommand<object> SortSurnameCommand
@@ -118,7 +99,7 @@ namespace CShar_Vanin_04.ViewModels
             get
             {
                 return _sortBySurname ??= new RelayCommand<object>(
-                    o => SortControlMethod(o, 2));
+                    o => SortControlMethod(2));
             }
         }
         public RelayCommand<object> SortEmailCommand
@@ -126,7 +107,7 @@ namespace CShar_Vanin_04.ViewModels
             get
             {
                 return _sortByEmail ??= new RelayCommand<object>(
-                    o => SortControlMethod(o, 3));
+                    o => SortControlMethod(3));
             }
         }
         public RelayCommand<object> SortBirthdayCommand
@@ -134,7 +115,7 @@ namespace CShar_Vanin_04.ViewModels
             get
             {
                 return _sortByBirthday ??= new RelayCommand<object>(
-                    o => SortControlMethod(o, 4));
+                    o => SortControlMethod(4));
             }
         }
         public RelayCommand<object> SortWesternZodiacCommand
@@ -142,7 +123,7 @@ namespace CShar_Vanin_04.ViewModels
             get
             {
                 return _sortByWesternZodiac ??= new RelayCommand<object>(
-                    o => SortControlMethod(o, 5));
+                    o => SortControlMethod(5));
             }
         }
         public RelayCommand<object> SortChineseZodiacCommand
@@ -150,7 +131,7 @@ namespace CShar_Vanin_04.ViewModels
             get
             {
                 return _sortByChineseZodiac ??= new RelayCommand<object>(
-                    o => SortControlMethod(o, 6));
+                    o => SortControlMethod(6));
             }
         }
         public RelayCommand<object> SortIsAdultCommand
@@ -158,7 +139,7 @@ namespace CShar_Vanin_04.ViewModels
             get
             {
                 return _sortByIsAdult ??= new RelayCommand<object>(
-                    o => SortControlMethod(o, 7));
+                    o => SortControlMethod(7));
             }
         }
         public RelayCommand<object> SortIsBirthdayCommand
@@ -166,7 +147,7 @@ namespace CShar_Vanin_04.ViewModels
             get
             {
                 return _sortByIsBirthday ??= new RelayCommand<object>(
-                    o => SortControlMethod(o, 8));
+                    o => SortControlMethod(8));
             }
         }
         #endregion
@@ -177,16 +158,32 @@ namespace CShar_Vanin_04.ViewModels
         #region Constructor
         internal PersonGridViewModel()
         {
-            LoaderManager.Instance.Initialize(this);
             LoaderManager.Instance.ShowLoader();
             Persons = new ObservableCollection<Person>(StationManager.DataStorage.PersonsList);
+            StationManager.DataStorage.PersonsList.CollectionChanged += OnCollectionChanged;
             LoaderManager.Instance.HideLoader();
+        }
+
+        private void OnCollectionChanged(object sender, NotifyCollectionChangedEventArgs eventArgs)
+        {
+            switch (eventArgs.Action)
+            {
+                case NotifyCollectionChangedAction.Add:
+                    Persons = new ObservableCollection<Person>(StationManager.DataStorage.PersonsList);
+                    break;
+                case NotifyCollectionChangedAction.Remove:
+                    Persons = new ObservableCollection<Person>(StationManager.DataStorage.PersonsList);
+                    break;
+                case NotifyCollectionChangedAction.Replace:
+                    Persons = new ObservableCollection<Person>(StationManager.DataStorage.PersonsList);
+                    break;
+            }
         }
 
         #endregion
 
         #region Functions
-        private async void SortControlMethod(object o, int i)
+        private async void SortControlMethod(int i)
         {
             LoaderManager.Instance.ShowLoader();
             await Task.Run(() =>
@@ -203,7 +200,7 @@ namespace CShar_Vanin_04.ViewModels
                     _ => (from p in _persons orderby p.IsBirthday select p)
                 };
                 Persons = new ObservableCollection<Person>(sortedPeople);
-                Thread.Sleep(300);
+                Thread.Sleep(500);
             });
             LoaderManager.Instance.HideLoader();
         }
@@ -213,25 +210,19 @@ namespace CShar_Vanin_04.ViewModels
             await Task.Run(() =>
             {
                 StationManager.DataStorage.SaveChanges();
-                Thread.Sleep(300);
+                Thread.Sleep(500);
             });
             LoaderManager.Instance.HideLoader();
         }
         private void AddPersonImplementation(object obj)
         {
-            IsControlEnabled = false;
-            var window = new AddEditPersonWindow();
-            window.ShowDialog();
-            IsControlEnabled = true;
-            Persons = new ObservableCollection<Person>(StationManager.DataStorage.PersonsList);
+            StationManager.SelectedUser = null;
+            NavigationManager.Instance.Navigate(ViewType.AddEdit);
         }
         private void EditPersonImplementation(object obj)
         {
-            IsControlEnabled = false;
-            var window = new AddEditPersonWindow(_selectedPerson);
-            window.ShowDialog();
-            IsControlEnabled = true;
-            Persons = new ObservableCollection<Person>(StationManager.DataStorage.PersonsList);
+            StationManager.SelectedUser = _selectedPerson;
+            NavigationManager.Instance.Navigate(ViewType.AddEdit);
         }
         private async void DeletePersonImplementation(object obj)
         {
@@ -243,9 +234,9 @@ namespace CShar_Vanin_04.ViewModels
                     MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes) return;
                 StationManager.DataStorage.DeletePerson(_selectedPerson);
                 _selectedPerson = null;
-                Persons = new ObservableCollection<Person>(StationManager.DataStorage.PersonsList);
+                StationManager.SelectedUser = null;
+                Thread.Sleep(500);
             });
-            Thread.Sleep(300);
             LoaderManager.Instance.HideLoader();
         }
 

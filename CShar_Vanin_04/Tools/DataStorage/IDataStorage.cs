@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+﻿using System.Collections.ObjectModel;
 using CShar_Vanin_04.Models;
 
 namespace CShar_Vanin_04.Tools.DataStorage
@@ -9,6 +9,6 @@ namespace CShar_Vanin_04.Tools.DataStorage
         void DeletePerson(Person person);
         void EditPerson(Person personToChange,Person editedPerson);
         void SaveChanges();
-        List<Person> PersonsList { get; }
+        ObservableCollection<Person> PersonsList { get; }
     }
 }

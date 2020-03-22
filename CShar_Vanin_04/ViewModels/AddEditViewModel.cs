@@ -1,16 +1,18 @@
 ﻿using System;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 using CShar_Vanin_04.Models;
 using CShar_Vanin_04.Tools;
 using CShar_Vanin_04.Tools.Managers;
 using CShar_Vanin_04.Tools.MVVM;
+using CShar_Vanin_04.Tools.Navigation;
 
 namespace CShar_Vanin_04.ViewModels
 {
     class AddEditViewModel: BaseViewModel
     {
         #region Fields
-        private readonly Person _person;
         private string _name;
         private string _surname;
         private string _email;
@@ -59,7 +61,6 @@ namespace CShar_Vanin_04.ViewModels
                 OnPropertyChanged();
             }
         }
-        public Action CloseAction { get; set; }
         #region Commands
         public RelayCommand<object> SubmitCommand
         {
@@ -85,50 +86,66 @@ namespace CShar_Vanin_04.ViewModels
         #endregion
 
         #region Constructors
-
-        internal AddEditViewModel(Person person)
-        {
-            _person = person;
-            _name = person.Name;
-            _surname = person.Surname;
-            _email = person.Email;
-            _birthDate = person.BirthDate;
-        }
-
+        
         internal AddEditViewModel()
         {
+            if (StationManager.SelectedUser == null) return;
+            _name = StationManager.SelectedUser.Name;
+            _surname = StationManager.SelectedUser.Surname;
+            _email = StationManager.SelectedUser.Email;
+            _birthDate = StationManager.SelectedUser.BirthDate;
         }
 
         #endregion
 
         #region Functions
-        private void SubmitImplementation(object obj)
+        private async void SubmitImplementation(object obj)
         {
-            try {
-                if (_person != null)
-                {
-                    if (MessageBox.Show("Are you sure you want to edit Person?", "Edit?",
-                        MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes) return;
-                    StationManager.DataStorage.EditPerson(_person, new Person(Name, Surname, Email, Date));
-                    CloseAction();
-                }
-                else
-                {
-                    StationManager.DataStorage.AddPerson(new Person(Name, Surname, Email, Date));
-                    MessageBox.Show("You have added new Person!");
-                    CloseAction();
-                }
-            }
-            catch (Exception e)
+            if (StationManager.SelectedUser != null)
             {
-                MessageBox.Show(e.Message);
+                if (MessageBox.Show("Are you sure you want to edit Person?", "Edit?",
+                    MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes) return;
+                LoaderManager.Instance.ShowLoader();
+                   
+                await Task.Run(() =>
+                {
+                    try
+                    {
+                        StationManager.DataStorage.EditPerson(StationManager.SelectedUser,
+                            new Person(Name, Surname, Email, Date));
+                        Thread.Sleep(500);
+                    } catch (Exception e)
+                    {
+                        MessageBox.Show(e.Message);
+                    }
+                });
+                LoaderManager.Instance.HideLoader();
+                NavigationManager.Instance.Navigate(ViewType.PersonGrid);
+            }
+            else
+            {
+                LoaderManager.Instance.ShowLoader();
+                await Task.Run(() =>
+                {
+                    try { 
+                        StationManager.DataStorage.AddPerson(new Person(Name, Surname, Email, Date));
+                        Thread.Sleep(500);
+                        MessageBox.Show("You have added new Person!");
+                    }
+                    catch (Exception e)
+                    {
+                        MessageBox.Show(e.Message);
+                    }
+                });
+                LoaderManager.Instance.HideLoader();
+                NavigationManager.Instance.Navigate(ViewType.PersonGrid);
             }
         }
 
 
         private void CancelImplementation(object obj)
         {
-            CloseAction();
+            NavigationManager.Instance.Navigate(ViewType.PersonGrid);
         }
 
         private bool CanExecuteCommand()

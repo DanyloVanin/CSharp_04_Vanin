@@ -1,7 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.IO;
-using System.Linq;
 using CShar_Vanin_04.Models;
 using CShar_Vanin_04.Tools.Managers;
 
@@ -9,17 +8,17 @@ namespace CShar_Vanin_04.Tools.DataStorage
 {
     internal class SerializedDataStorage : IDataStorage
     {
-        private List<Person> _persons;
+        private ObservableCollection<Person> _persons;
 
         internal SerializedDataStorage()
         {
             try
             {
-                _persons = SerializationManager.Deserialize<List<Person>>(FileFolderHelper.StorageFilePath);
+                _persons = SerializationManager.Deserialize<ObservableCollection<Person>>(FileFolderHelper.StorageFilePath);
             }
             catch (FileNotFoundException)
             {
-                _persons = new List<Person>();
+                _persons = new ObservableCollection<Person>();
                 FillPersonsRandomly();
                 SaveChanges();
             }
@@ -55,12 +54,13 @@ namespace CShar_Vanin_04.Tools.DataStorage
         public void EditPerson(Person personToChange, Person editedPerson)
         {
             _persons[_persons.IndexOf(personToChange)] = editedPerson;
+            SaveChanges();
         }
 
 
-        public List<Person> PersonsList
+        public ObservableCollection<Person> PersonsList
         {
-            get => _persons.ToList();
+            get => _persons;
             set => _persons = value;
         }
 
